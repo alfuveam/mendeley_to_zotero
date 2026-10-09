@@ -76,6 +76,76 @@ Pode rodar o script no Zotero mais de uma vez sem duplicar nada: cada item receb
 `Mendeley-ID: ...` no campo *Extra*, e os que já existem são pulados. Isso permite, por
 exemplo, baixar PDFs que faltavam, rodar tudo de novo e importar só o que é novo.
 
+## Chaves de citação no LaTeX
+
+Quem escreve em LaTeX cita as referências por uma chave: `\cite{Giray2023}`. O Mendeley
+gera chaves nesse formato (sobrenome + ano), mas o Zotero exporta outro formato
+(`giray_prompt_2023`), e aí os `\cite` do texto param de funcionar. Há duas saídas.
+Escolha **uma**:
+
+- **Opção A, adotar as chaves do Zotero:** `converter_citacoes.py` reescreve os `.tex`.
+- **Opção B, manter as chaves do Mendeley:** `chaves_de_citacao.py` faz o Zotero exportar as chaves antigas.
+
+### Opção A: converter os `\cite` para as chaves do Zotero
+
+1. No Zotero, exporte a biblioteca ou a coleção em BibTeX (botão direito → *Exportar coleção…* → BibTeX).
+2. Veja o que vai mudar. Este passo não altera nada:
+
+   ```bash
+   .venv/bin/python converter_citacoes.py --tex caminho/do/latex --bib zotero.bib
+   ```
+3. Aplique as mudanças. O script guarda uma cópia `.bak` de cada arquivo alterado:
+
+   ```bash
+   .venv/bin/python converter_citacoes.py --tex caminho/do/latex --bib zotero.bib --aplicar
+   ```
+4. Aponte o `\bibliography{...}` para o `.bib` exportado pelo Zotero.
+
+O script troca as chaves em `\cite`, `\citeonline`, `\citeauthor`, `\citeyear`, `\citet`,
+`\parencite`, `\autocite` e nos outros comandos `\...cite...`, inclusive com argumentos
+opcionais, como em `\cite[p.~21]{...}`.
+
+As chaves do Zotero são lidas do `.bib` que ele mesmo exportou, então batem exatamente.
+Cada entrada é casada com a referência do Mendeley pela linha `Mendeley-ID` (que o importador
+grava no Extra e o Zotero exporta no campo `note`). Quando essa linha não existe, o casamento
+é feito pelo DOI ou pelo título.
+
+As chaves antigas são recalculadas nos dois formatos que o Mendeley usa: o curto, com
+sobrenome e ano (`Song2025`), e o longo, que acrescenta a primeira e a última palavra do
+título (`Song2025AirGPT:Science`). Se você ainda tiver o `.bib` que o
+Mendeley exportava, passe com `--bib-mendeley antigo.bib`. Assim as chaves saem direto dele
+e casam mesmo que você tenha corrigido o ano ou o autor depois. No fim, o script lista as
+citações que não conseguiu converter e sugere a chave parecida, quando existe uma.
+
+Sem `--bib`, o script busca o BibTeX direto do Zotero aberto. Para isso, ligue *Configurações →
+Avançado → "Permitir que outros aplicativos neste computador se comuniquem com o Zotero"*.
+
+> Se você já rodou a opção B, apague as linhas `Citation Key:` do Extra antes. Enquanto elas
+> estiverem lá, o Zotero continua exportando as chaves do Mendeley.
+
+### Opção B: manter as chaves do Mendeley
+
+O script `chaves_de_citacao.py` resolve isso. Ele calcula a chave no padrão do Mendeley para
+cada referência e gera um JavaScript que grava a linha `Citation Key: SilvaNeto2024` no
+campo *Extra* de cada item. O exportador BibTeX do Zotero (e o Better BibTeX, se você usar)
+usa essa linha como chave.
+
+```bash
+.venv/bin/python chaves_de_citacao.py --tex caminho/do/projeto/latex
+```
+
+Depois rode `saida/definir_chaves_no_zotero.js` no Zotero, do mesmo jeito do passo 3, e
+exporte o `.bib` de novo.
+
+- O `--tex` é opcional. Com ele, o script lê os `\cite{...}` dos seus arquivos `.tex` e lista as
+  chaves citadas que não batem com nenhuma referência. Costuma acontecer quando o ano ou o
+  autor foi corrigido no Mendeley depois que a chave foi usada no texto.
+- Quando duas referências geram a mesma chave, o Mendeley acrescenta `a`, `b`, ... no final.
+  A ordem em que ele distribui essas letras não é conhecida. O script segue a data de inclusão
+  e lista os casos repetidos para você conferir.
+- Funciona também com itens que entraram no Zotero por outro caminho (por exemplo, pela
+  importação online do próprio Zotero). Nesse caso o item é encontrado pelo DOI ou pelo título.
+
 ## Opções
 
 ```
