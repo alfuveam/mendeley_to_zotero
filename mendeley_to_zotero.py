@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Exporta a biblioteca do Mendeley Reference Manager (desktop) para o Zotero.
 
-Lê direto do cache local do Mendeley (IndexedDB do Electron em
-~/.config/Mendeley Reference Manager), sem precisar de API nem login, e gera em
+Lê direto do cache local do Mendeley (IndexedDB do Electron), sem precisar de
+API nem login, e gera em
 --saida:
 
   pdfs/                   cópia dos PDFs originais, com o nome de arquivo do Mendeley
@@ -19,7 +19,7 @@ Uso:
   .venv/bin/pip install -r requirements.txt
   .venv/bin/python mendeley_to_zotero.py
 
-  Depois, no Zotero 7: Ferramentas → Desenvolvedor → Executar JavaScript, marque
+  Depois, no Zotero (7 ou mais recente): Ferramentas → Desenvolvedor → Executar JavaScript, marque
   "Executar como função assíncrona", cole o conteúdo de importar_no_zotero.js e
   clique em Executar. Rodar de novo não duplica (os itens levam "Mendeley-ID" no Extra).
 """
@@ -38,7 +38,12 @@ from pathlib import Path
 import pymupdf
 from ccl_chromium_reader import ccl_chromium_indexeddb as idb
 
-MENDELEY_DIR = Path.home() / ".config" / "Mendeley Reference Manager"
+if sys.platform == "win32":
+    MENDELEY_DIR = Path.home() / "AppData" / "Roaming" / "Mendeley Reference Manager"
+elif sys.platform == "darwin":
+    MENDELEY_DIR = Path.home() / "Library" / "Application Support" / "Mendeley Reference Manager"
+else:
+    MENDELEY_DIR = Path.home() / ".config" / "Mendeley Reference Manager"
 
 ITEM_TYPES = {
     "journal": "journalArticle",
@@ -509,7 +514,7 @@ def bibtex(items):
 
 
 JS_TEMPLATE = r"""// Gerado por mendeley_to_zotero.py
-// Zotero 7: Ferramentas → Desenvolvedor → Executar JavaScript,
+// Zotero 7+: Ferramentas → Desenvolvedor → Executar JavaScript,
 // marque "Executar como função assíncrona", cole TUDO e clique em Executar.
 // Pode rodar de novo: itens que já têm o mesmo "Mendeley-ID" no Extra são pulados.
 
